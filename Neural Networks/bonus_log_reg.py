@@ -2,13 +2,10 @@
 # which was based on the code provided in pytorch-tutorial-main
 # which was provided as an example for the homework
 
-from collections import OrderedDict
 from time import time
 import os
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-
 
 def train(x, y, w, v, gamma):
     for i in range(len(y)):
@@ -19,7 +16,7 @@ def train(x, y, w, v, gamma):
         w = w - gamma * grad # update the weights based on the gradient
     return w
 
-def test(x, y, w, v, gamma):
+def test(x, y, w):
     x_aug = np.vstack((np.ones(len(y)),x.T)).T # augment the data with 1 for the bias
     pred = np.sign(np.matmul(w, x_aug.T)) # prediction is the sign of w.T * x
     correct = np.sum(y == pred) # count the correct predictions
@@ -38,7 +35,9 @@ def main():
     p_var = [0.01, 0.1, 0.5, 1, 3, 5, 10, 100] # list of variances to test
     gamma_0 = 0.03 # from homework 4
     d = 0.0001 # from homework 4
-    gamma = 1E-8 # gamma_0/(1+gamma_0/d) # gamma calulation
+    # gamma_0/(1+gamma_0/d) # gamma calulation, tried getting it to work with the equation given but it wasnt working
+    # tried directly setting gamma, also didn't work. Error stays about as if the predictor is completely random
+    gamma = 1E-8 
     EPOCHS = 100
 
     for v in p_var: # for each variance
@@ -57,7 +56,7 @@ def main():
 
         w = np.append([1], np.zeros(4)) # make an empty weight vector with a 1 for the bias (w_0 = 1, x_0 = 1)
         rand = np.random.default_rng()
-        indices = np.arange(train_data.shape[0])
+        indices = np.arange(len(train_Y))
         train_errors = np.zeros(EPOCHS) # empty array to store errors
         test_errors = np.zeros(EPOCHS) # empty array to store errors
         for i in range(EPOCHS):
@@ -66,8 +65,8 @@ def main():
             train_Y = train_Y[indices]
 
             w = train(x=train_X, y=train_Y, w=w, v=v, gamma=gamma) # run data through the training algorithm to get a good weight vector
-            train_errors[i ]= test(x=train_X, y=train_Y, w=w, v=v, gamma=gamma) # test the weight vector
-            test_errors[i] = test(x=test_X, y=test_Y, w=w, v=v, gamma=gamma) # test the weight vector
+            train_errors[i ]= test(x=train_X, y=train_Y, w=w) # test the weight vector
+            test_errors[i] = test(x=test_X, y=test_Y, w=w) # test the weight vector
 
         print(' done, time: ' + str(time() - tic), flush=True)
         np.savetxt('error_train_v' + str(v) + '.csv', train_errors, fmt='%.4f', delimiter=',')
