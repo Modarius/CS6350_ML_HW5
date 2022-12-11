@@ -69,12 +69,13 @@ def init_weights_xav(m):
 
 def train(dataloader, model, loss_fn, optimizer):
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    model = model.to(device=device)
     model.train()
-    model.to(device=device)
 
     train_loss = 0
     for batch, (data, label) in enumerate(dataloader):
         optimizer.zero_grad()
+        data, label = data.to(device), label.to(device)
         prediction = model(data.flatten())
         loss = loss_fn(prediction, label)
         loss.backward()
@@ -84,12 +85,13 @@ def train(dataloader, model, loss_fn, optimizer):
     return train_loss
 
 def test(dataloader, model, loss_fn):
-    model.eval()
     device = "cuda" if torch.cuda.is_available() else "cpu"
-
+    model = model.to(device)
+    model.eval()
     test_loss = 0
     with torch.no_grad():
         for batch, (data, label) in enumerate(dataloader):
+            data, label = data.to(device), label.to(device)
             prediction = model(data.flatten())
             loss = loss_fn(prediction, label)
             test_loss += loss.item()
@@ -110,7 +112,7 @@ def main():
 
     nn_width = [5,10,25,50,100]
     nn_depth = [3,5,9]
-    activation = 'relu'
+    activation = 'tanh'
     EPOCHS = 100
 
     # https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
@@ -119,7 +121,7 @@ def main():
     test_data = banknote('/bank-note/test.csv')
     test_dataloader = DataLoader(test_data, shuffle=True)
 
-    train_errors = np.empty(EPOCHS)
+    train_errors = np.zeros(EPOCHS)
     test_errors = np.zeros(EPOCHS)
     for width in nn_width:
         for depth in nn_depth:
@@ -132,7 +134,8 @@ def main():
             loss_fn = torch.nn.MSELoss()
             prev_train_errors = 0
             for i in range(0,EPOCHS):
-                train_errors[i] = np.mean(train(train_dataloader, model=model, loss_fn=loss_fn, optimizer=optimizer))
+                train(train_dataloader, model=model, loss_fn=loss_fn, optimizer=optimizer)
+                train_errors[i] = test(train_dataloader, model=model, loss_fn=loss_fn)
                 test_errors[i] = test(test_dataloader, model=model, loss_fn=loss_fn)
                 if i%10 == 0: print('.',end="",flush=True)
                 if (abs(prev_train_errors - train_errors[i]) < .001 and i >= 20): break
@@ -148,8 +151,8 @@ def main():
             file_name = 'nn_bonus_w' + str(width) + 'd' + str(depth)
             plt.savefig(file_name)
             plt.close(0)
-            np.savetxt(file_name+'_train.csv', train_errors[0:i], fmt='%.4f', delimiter=',')
-            np.savetxt(file_name+'_test.csv', test_errors[0:i], fmt='%.4f', delimiter=',')
+            np.savetxt(file_name+'_train.csv', train_errors[0:i], fmt='%.6f', delimiter=',')
+            np.savetxt(file_name+'_test.csv', test_errors[0:i], fmt='%.6f', delimiter=',')
     return
 
 if __name__ == "__main__":
