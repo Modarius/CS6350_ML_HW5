@@ -121,10 +121,14 @@ def main():
     test_data = banknote('/bank-note/test.csv')
     test_dataloader = DataLoader(test_data, shuffle=True)
 
-    train_errors = np.zeros(EPOCHS)
-    test_errors = np.zeros(EPOCHS)
-    for width in nn_width:
-        for depth in nn_depth:
+    train_errors = np.array([])
+    test_errors = np.zeros([])
+    final_train_errors = np.zeros((len(nn_width), len(nn_depth)))
+    final_test_errors = np.zeros((len(nn_width), len(nn_depth)))
+    for w in range(len(nn_width)):
+        for d in range(len(nn_depth)):
+            width = nn_width[w]
+            depth = nn_depth[d]
             print("Width: " + str(width) + ', Depth: ' + str(depth), end='', flush=True)
             tic = time()
             # https://pytorch.org/tutorials/beginner/basics/buildmodel_tutorial.html
@@ -135,8 +139,10 @@ def main():
             prev_train_errors = 0
             for i in range(0,EPOCHS):
                 train(train_dataloader, model=model, loss_fn=loss_fn, optimizer=optimizer)
-                train_errors[i] = test(train_dataloader, model=model, loss_fn=loss_fn)
-                test_errors[i] = test(test_dataloader, model=model, loss_fn=loss_fn)
+                train_error = test(train_dataloader, model=model, loss_fn=loss_fn)
+                test_error = test(test_dataloader, model=model, loss_fn=loss_fn)
+                train_errors = np.append(train_errors, train_error)
+                test_errors = np.append(test_errors, test_error)
                 if i%10 == 0: print('.',end="",flush=True)
                 if (abs(prev_train_errors - train_errors[i]) < .001 and i >= 20): break
                 prev_train_errors = train_errors[i]
@@ -148,11 +154,16 @@ def main():
             plt.xlabel("Epochs")
             plt.ylabel("Error (MSE Loss)")
             plt.legend()
-            file_name = 'nn_bonus_w' + str(width) + 'd' + str(depth)
+            file_name = activation + 'nn_bonus_w' + str(width) + '_d' + str(depth)
             plt.savefig(file_name)
             plt.close(0)
             np.savetxt(file_name+'_train.csv', train_errors[0:i], fmt='%.6f', delimiter=',')
             np.savetxt(file_name+'_test.csv', test_errors[0:i], fmt='%.6f', delimiter=',')
+            final_train_errors[w,d] = train_errors[-1]
+            final_test_errors[w,d] = test_errors[-1]
+            np.savetxt(file_name+'_final_train_errors.csv', final_train_errors, fmt='%.6f', delimiter=',')
+            np.savetxt(file_name+'_final_test_errors.csv', final_test_errors, fmt='%.6f', delimiter=',')
+            print(' done, time: ' + str(time() - tic), flush=True)
     return
 
 if __name__ == "__main__":
