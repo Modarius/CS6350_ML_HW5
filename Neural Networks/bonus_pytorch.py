@@ -121,14 +121,14 @@ def main():
     test_data = banknote('/bank-note/test.csv')
     test_dataloader = DataLoader(test_data, shuffle=True)
 
-    train_errors = np.array([])
-    test_errors = np.zeros([])
     final_train_errors = np.zeros((len(nn_width), len(nn_depth)))
     final_test_errors = np.zeros((len(nn_width), len(nn_depth)))
     for w in range(len(nn_width)):
         for d in range(len(nn_depth)):
             width = nn_width[w]
             depth = nn_depth[d]
+            train_errors = np.array([])
+            test_errors = np.array([])
             print("Width: " + str(width) + ', Depth: ' + str(depth), end='', flush=True)
             tic = time()
             # https://pytorch.org/tutorials/beginner/basics/buildmodel_tutorial.html
@@ -148,8 +148,8 @@ def main():
                 prev_train_errors = train_errors[i]
             print(' done, time: ' + str(time() - tic), flush=True)
             f = plt.figure(0)
-            plt.plot(range(1,i+1),train_errors[0:i], label="Training")
-            plt.plot(range(1,i+1),test_errors[0:i], label="Testing")
+            plt.plot(range(1,len(train_errors)+1),train_errors, label="Training")
+            plt.plot(range(1,len(test_errors)+1),test_errors, label="Testing")
             plt.title("Error for width: " + str(width) + ' and depth: ' + str(depth))
             plt.xlabel("Epochs")
             plt.ylabel("Error (MSE Loss)")
@@ -157,8 +157,8 @@ def main():
             file_name = activation + 'nn_bonus_w' + str(width) + '_d' + str(depth)
             plt.savefig(file_name)
             plt.close(0)
-            np.savetxt(file_name+'_train.csv', train_errors[0:i], fmt='%.6f', delimiter=',')
-            np.savetxt(file_name+'_test.csv', test_errors[0:i], fmt='%.6f', delimiter=',')
+            np.savetxt(file_name+'_train.csv', train_errors, fmt='%.6f', delimiter=',')
+            np.savetxt(file_name+'_test.csv', test_errors, fmt='%.6f', delimiter=',')
             final_train_errors[w,d] = train_errors[-1]
             final_test_errors[w,d] = test_errors[-1]
             np.savetxt(file_name+'_final_train_errors.csv', final_train_errors, fmt='%.6f', delimiter=',')
